@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  passwordHash  String?
+  avatarUrl     String?
+  role          String   @default("user")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tasks         Task[]
+  notes         Note[]
+  templates     Template[]
+  documents     BankDocument[]
+  favorites     Favorite[]
+  activities    Activity[]
+  settings      UserSettings?
+}
+
+model UserSettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  theme           String   @default("dark")
+  compactMode     Boolean  @default(false)
+  aiProvider      String   @default("local")
+  aiModel         String   @default("local")
+  localOnlyMode   Boolean  @default(true)
+  vaultTimeoutMin Int      @default(15)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  status      String    @default("pending")
+  priority    String    @default("normal")
+  category    String    @default("Operations")
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  content     String
+  tags        String   @default("")
+  category    String   @default("General")
+  pinned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  category    String
+  content     String
+  favorite    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model BankDocument {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  category    String
+  tags        String   @default("")
+  url         String?
+  fileName    String?
+  favorite    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Favorite {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  itemId      String
+  name        String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  message     String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+}
