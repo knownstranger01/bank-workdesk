@@ -30,6 +30,7 @@ import {
   Zap,
 } from 'lucide-react';
 
+import { buildEmailDraft, emailTemplates } from '@/lib/email-templates';
 import { demoBankDocuments, demoNotes, demoQuickTools, demoRequirements, demoTasks } from '@/lib/demo-data';
 import type { BankDocumentItem, Note, Requirement, Task } from '@/types';
 
@@ -57,6 +58,7 @@ const commandPaletteItems = [
   'Open PDF Studio',
   'Open Image Studio',
   'Open Email Writer',
+  'Open Email Templates',
   'Open Calculators',
   'Open Required Documents',
   'Open Bank Documents',
@@ -81,6 +83,12 @@ export default function WorkdeskApp() {
   ]);
   const [dateText, setDateText] = useState('');
   const [timeText, setTimeText] = useState('');
+  const [emailTemplateKey, setEmailTemplateKey] = useState<keyof typeof emailTemplates>('customerUpdate');
+  const [emailValues, setEmailValues] = useState({
+    CustomerName: 'Customer',
+    Purpose: 'bank account opening',
+    Subject: 'Account onboarding',
+  });
 
   useEffect(() => {
     const updateClock = () => {
@@ -166,6 +174,11 @@ export default function WorkdeskApp() {
     };
   }, [documents, filteredNotes, filteredTasks, query, requirements]);
 
+  const emailDraft = useMemo(
+    () => buildEmailDraft(emailTemplateKey, emailValues),
+    [emailTemplateKey, emailValues],
+  );
+
   const toggleTask = (id: string) => {
     setTasks((current) =>
       current.map((task) =>
@@ -207,6 +220,9 @@ export default function WorkdeskApp() {
     if (cmd === 'New Task') addTask();
     if (cmd === 'New Note') setActiveView('notes');
     if (cmd === 'Open PDF Studio') setActiveView('pdf');
+    if (cmd === 'Open Email Writer') setActiveView('email');
+    if (cmd === 'Open Email Templates') setActiveView('templates');
+    if (cmd === 'Open Calculators') setActiveView('calculators');
     if (cmd === 'Open Required Documents') setActiveView('requirements');
     if (cmd === 'Open Bank Documents') setActiveView('documents');
     if (cmd === 'Ask WorkDesk AI') setAiOpen(true);
@@ -236,6 +252,9 @@ export default function WorkdeskApp() {
     if (activeView === 'requirements') return 'Required Documents';
     if (activeView === 'pdf') return 'PDF Studio';
     if (activeView === 'images') return 'Image Studio';
+    if (activeView === 'email') return 'Email Writer';
+    if (activeView === 'templates') return 'Email Templates';
+    if (activeView === 'calculators') return 'Calculators';
     return activeView.charAt(0).toUpperCase() + activeView.slice(1);
   }, [activeView]);
 
@@ -654,6 +673,113 @@ export default function WorkdeskApp() {
                         {item.optional ? 'Optional' : 'Mandatory'}
                       </div>
                       <div className="mt-2 text-xs text-slate-400">{item.notes}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeView === 'email' && (
+              <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-white">Email Writer</h2>
+                    <span className="rounded-full bg-bank-500/15 px-2 py-1 text-[10px] uppercase text-bank-100">
+                      Draft
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Template</label>
+                      <select
+                        value={emailTemplateKey}
+                        onChange={(event) => setEmailTemplateKey(event.target.value as keyof typeof emailTemplates)}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 outline-none"
+                      >
+                        {Object.entries(emailTemplates).map(([key, template]) => (
+                          <option key={key} value={key}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-3">
+                      {Object.entries(emailValues).map(([field, value]) => (
+                        <div key={field}>
+                          <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">{field}</label>
+                          <input
+                            value={value}
+                            onChange={(event) =>
+                              setEmailValues((current) => ({ ...current, [field]: event.target.value }))
+                            }
+                            className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-white">Prepared draft</h3>
+                    <button type="button" className="rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-200">
+                      Copy
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+                    <div>
+                      <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">Subject</div>
+                      <div className="text-sm text-white">{emailDraft.subject}</div>
+                    </div>
+                    <div>
+                      <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">Body</div>
+                      <div className="whitespace-pre-wrap text-sm leading-6 text-slate-200">{emailDraft.body}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeView === 'templates' && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-white">Email Templates</h2>
+                  <button type="button" className="rounded-xl bg-bank-500 px-3 py-2 text-sm text-white">
+                    New Template
+                  </button>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {Object.entries(emailTemplates).map(([key, template]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setEmailTemplateKey(key as keyof typeof emailTemplates);
+                        setActiveView('email');
+                      }}
+                      className="rounded-xl border border-slate-800 bg-slate-900/80 p-4 text-left"
+                    >
+                      <div className="mb-2 text-base font-medium text-white">{template.name}</div>
+                      <div className="text-sm text-slate-300">{template.subject}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeView === 'calculators' && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                <h2 className="mb-4 text-xl font-semibold text-white">Calculators</h2>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {['EMI', 'FD', 'SIP', 'Percentage', 'Loan', 'Tax'].map((calc) => (
+                    <div key={calc} className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+                      <div className="mb-2 text-sm font-medium text-slate-200">{calc}</div>
+                      <div className="text-xs text-slate-400">Ready for quick estimate.</div>
                     </div>
                   ))}
                 </div>
